@@ -30,7 +30,7 @@ import wandb
 import sys
 import os
 
-PATH = "ghn.pth"
+PATH = sys.argv[5]
 LEARNING_RATE = 1e-3
 META_LEARNING_RATE = 1e-4
 INTERLEAVE = 0
@@ -266,6 +266,7 @@ def main():
             plt.show()
             print("\n\n")
 
+    torch.save(ghn.state_dict(), PATH)
     print('Finished Training')
 
 if __name__=="__main__":
