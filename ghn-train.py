@@ -33,7 +33,6 @@ import os
 PATH = sys.argv[5]
 LEARNING_RATE = 1e-3
 META_LEARNING_RATE = 1e-4
-INTERLEAVE = 0
 LIMITS=[1]
 
 n_iter = int(sys.argv[1])
@@ -141,6 +140,7 @@ def get_models(n_models=8, viz=False):
     return paths,graphs
 
 def main():
+    INTERLEAVE = 0
 
     run = wandb.init(reinit=True, name=run_name, project="ammi-thesis")
     run.config.update({
