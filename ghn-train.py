@@ -267,3 +267,6 @@ def main():
             print("\n\n")
 
     print('Finished Training')
+
+if __name__=="__main__":
+    main()
