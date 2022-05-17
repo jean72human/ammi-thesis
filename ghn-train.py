@@ -173,7 +173,7 @@ def main():
                                             shuffle=True)
 
     hyper_optimizer = optim.AdamW(ghn.parameters(), lr=META_LEARNING_RATE)
-    scheduler = optim.StepLR(hyper_optimizer, step_size=print_freq, gamma=0.1)
+    scheduler = optim.lr_scheduler.StepLR(hyper_optimizer, step_size=print_freq, gamma=0.1)
     criterion = nn.CrossEntropyLoss()
 
     for it in range(n_iter):
