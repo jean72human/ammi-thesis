@@ -142,7 +142,7 @@ def get_models(n_models=8, viz=False):
 
 def main():
 
-    run = wandb.init(reinit=True, name=run_name, project="translating-input-uncertainty")
+    run = wandb.init(reinit=True, name=run_name, project="ammi-thesis")
     run.config.update({
         "n_iter":n_iter,
         "meta_batch":meta_batch,
@@ -157,7 +157,7 @@ def main():
         [transforms.ToTensor(),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
-    batch_size = 32 #11254
+    batch_size = 64 #11254
     batch_size_test = 32
 
     trainset = torchvision.datasets.CIFAR10(root='./data/', train=True,
