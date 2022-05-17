@@ -212,11 +212,12 @@ def main():
                 dict_to_weights(model,new_weights)
                 
                 torch.save(model, paths[idx]+'.pt')
+
+                if e+1==INTERLEAVE: run.log({"loss":pl/LIMITS[-1]}, step=it+1)
                 
             #torch.nn.utils.clip_grad_norm_(ghn.parameters(), 1)
             hyper_optimizer.step() 
             print(f"Iteration {it+1} Leaf {e+1} Loss is {pl/(meta_batch*LIMITS[-1])}")
-        run.log({"loss":pl/(meta_batch*LIMITS[-1])}, step=it+1)
         scheduler.step()
         
             
