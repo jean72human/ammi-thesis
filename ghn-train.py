@@ -153,7 +153,7 @@ def main():
     ghn = GHN([512,512,3,3],10, hid=128, ve=True, hypernet='gatedgnn', backmul=False, passes=1, layernorm=True, weightnorm=False, device=device).to(device)
 
     # MNIST Data 
-    transform = transform = transforms.Compose(
+    data_transform = transforms.Compose(
         [transforms.ToTensor(),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
@@ -161,14 +161,14 @@ def main():
     batch_size_test = 32
 
     trainset = torchvision.datasets.CIFAR10(root='./data/', train=True,
-                                            download=True, transform=transform)
+                                            download=True, transform=data_transform)
 
     #trainset,_ = torch.utils.data.random_split(dataset, [10000, 40000])
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
                                             shuffle=True)
 
     testset = torchvision.datasets.CIFAR10(root='./data/', train=False,
-                                        download=True, transform=transform)
+                                        download=True, transform=data_transform)
     testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size_test,
                                             shuffle=True)
 
