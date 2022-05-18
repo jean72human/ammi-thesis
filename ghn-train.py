@@ -157,7 +157,7 @@ def main():
         [transforms.ToTensor(),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
-    batch_size = 16 #11254
+    batch_size = 12 #11254
     batch_size_test = 16
 
     trainset = torchvision.datasets.CIFAR10(root='./data/', train=True,
@@ -199,14 +199,13 @@ def main():
                 new_weights = ghn(g,weights.data)
 
                 with higher.innerloop_ctx(model, opt) as (fmodel, diffopt):
-                    for data_it, (inputs, labels) in enumerate(trainloader):
-                        inputs, labels = inputs.to(device), labels.to(device)
-                        outputs = fmodel(inputs, params=relevant(new_weights,model))
+                    inputs, labels = next(iter(trainloader))   
+                    inputs, labels = inputs.to(device), labels.to(device)
+                    outputs = fmodel(inputs, params=relevant(new_weights,model))
 
-                        loss = criterion(outputs, labels) #+ 1e-5*new_weights.norm().sum()
-                        loss.backward(retain_graph=True)
-                        pl+=loss.item()
-                        if data_it == LIMITS[-1]:break
+                    loss = criterion(outputs, labels) #+ 1e-5*new_weights.norm().sum()
+                    loss.backward()
+                    pl+=loss.item()
                 
                 
                 dict_to_weights(model,new_weights)
