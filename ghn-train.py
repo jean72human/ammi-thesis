@@ -20,9 +20,6 @@ import random
 
 import higher
 
-import matplotlib.pyplot as plt
-import seaborn as sns
-
 import wandb
 
 import sys
@@ -121,7 +118,7 @@ def relevant(store,model):
     
     return to_return
 
-def get_models(n_models=8, viz=False):
+def get_models(n_models=8):
     paths = []
     graphs = []
     for d in range(n_models):
@@ -134,7 +131,6 @@ def get_models(n_models=8, viz=False):
         correct_model(model)
         model.to(device)
         torch.save(model, m_path+'.pt')
-        if viz: g.visualize(figsize=(6,2))
     return paths,graphs
 
 def main():
@@ -225,7 +221,6 @@ def main():
             test_model = Network(test_spec, num_labels=10, in_channels=3, stem_out_channels=128, num_stacks=3, num_modules_per_stack=3)
             test_model.expected_image_sz = (3,32,32)
             test_graph = Graph(test_model.eval()).to(device)
-            test_graph.visualize(figsize=(6,6))
             test_model.to(device)
             test_model.train()
 
@@ -252,16 +247,6 @@ def main():
                 print(f"Loss: {running_loss/len(testloader)}")
                 losses.append(running_loss/len(testloader))
                 acc.append(correct/len(testset))
-
-            plt.plot(losses)
-            plt.xlabel("epochs")
-            plt.ylabel("loss at test time")
-            plt.show()
-            plt.plot(acc)
-            plt.xlabel("epoch")
-            plt.ylabel("accuracy at test time")
-            plt.show()
-            print("\n\n")
 
     torch.save(ghn.state_dict(), PATH)
     print('Finished Training')
