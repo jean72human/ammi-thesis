@@ -22,8 +22,6 @@ import higher
 
 import matplotlib.pyplot as plt
 import seaborn as sns
-sns.set_theme(style="whitegrid")
-sns.set(rc={'figure.figsize':(15,5)})
 
 import wandb
 
