@@ -157,8 +157,8 @@ def main():
         [transforms.ToTensor(),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
-    batch_size = 12 #11254
-    batch_size_test = 16
+    batch_size = 32 #11254
+    batch_size_test = 32
 
     trainset = torchvision.datasets.CIFAR10(root='./data/', train=True,
                                             download=True, transform=data_transform)
