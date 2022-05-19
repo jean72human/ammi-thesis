@@ -167,7 +167,7 @@ def main():
                                             shuffle=True)
 
     hyper_optimizer = optim.AdamW(ghn.parameters(), lr=META_LEARNING_RATE)
-    scheduler = optim.lr_scheduler.StepLR(hyper_optimizer, step_size=print_freq, gamma=0.1)
+    scheduler = optim.lr_scheduler.OneCycleLR(hyper_optimizer, max_lr=META_LEARNING_RATE, steps_per_epoch=meta_batch, epochs=sum([print_freq * (j+1) for j in range(int(n_iter/print_freq))]))
     criterion = nn.CrossEntropyLoss()
 
     with run:
@@ -207,49 +207,18 @@ def main():
                     
                     torch.save(model, paths[idx]+'.pt')
 
-                    if e+1==INTERLEAVE: run.log({"loss":pl/LIMITS[-1]}, step=it+1)
+                    if e+1==INTERLEAVE:
+                        run.log({
+                            "loss":pl/LIMITS[-1],
+                            "learning_rate":hyper_optimizer.param_groups[0]["lr"]
+                        })
                     
                 #torch.nn.utils.clip_grad_norm_(ghn.parameters(), 1)
                 hyper_optimizer.step() 
-                print(f"Iteration {it+1} Leaf {e+1} Loss is {pl/(meta_batch*LIMITS[-1])}")
-            scheduler.step()
+                scheduler.step()
             
-                
-            ## TEST    
-            if it==0 or (it+1)==n_iter or (it+1)%print_freq==0:
-                ghn.eval()
-                test_spec = random_spec()
-                test_model = Network(test_spec, num_labels=10, in_channels=3, stem_out_channels=128, num_stacks=3, num_modules_per_stack=3)
-                test_model.expected_image_sz = (3,32,32)
-                test_graph = Graph(test_model.eval()).to(device)
-                test_model.to(device)
-                test_model.train()
-
-                losses = []
-                acc = []
-
-                for e in range(5):
-                    weights = weights_to_dict(test_model,g)
-
-                    new_weights = ghn(g,weights.data)
-
-                    dict_to_weights(test_model,new_weights)
-
-                    running_loss = 0.0
-                    correct = 0
-                    for inputs, labels in testloader:
-                        inputs, labels = inputs.to(device), labels.to(device)
-                        # forward
-                        outputs = test_model(inputs)
-                        loss = criterion(outputs, labels)
-                        running_loss += loss.item()
-                        pred = outputs.max(1, keepdim=True)[1] # get the index of the max log-probability
-                        correct += pred.eq(labels.view_as(pred)).sum().item()
-                    print(f"Loss: {running_loss/len(testloader)}")
-                    losses.append(running_loss/len(testloader))
-                    acc.append(correct/len(testset))
-
-    torch.save(ghn.state_dict(), PATH)
+            if it%10==0: torch.save(ghn.state_dict(), PATH+"-epoch-"+str(it)+".pth")
+    torch.save(ghn.state_dict(), PATH+"-final.pth")
     print('Finished Training')
 
 if __name__=="__main__":
