@@ -159,12 +159,12 @@ def main():
 
     #trainset,_ = torch.utils.data.random_split(dataset, [10000, 40000])
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
-                                            shuffle=True, num_worker=2)
+                                            shuffle=True, num_workers=2)
 
     testset = torchvision.datasets.CIFAR10(root='./data/', train=False,
                                         download=True, transform=data_transform)
     testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size_test,
-                                            shuffle=True, num_worker=2)
+                                            shuffle=True, num_workers=2)
 
     hyper_optimizer = optim.AdamW(ghn.parameters(), lr=META_LEARNING_RATE)
     scheduler = optim.lr_scheduler.OneCycleLR(hyper_optimizer, max_lr=META_LEARNING_RATE, steps_per_epoch=meta_batch, epochs=sum([print_freq * (j+1) for j in range(int(n_iter/print_freq))]))
