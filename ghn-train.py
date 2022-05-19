@@ -27,7 +27,7 @@ import os
 
 PATH = sys.argv[5]
 LEARNING_RATE = 1e-3
-META_LEARNING_RATE = 1e-4
+META_LEARNING_RATE = 2e-4
 LIMITS=[1]
 
 n_iter = int(sys.argv[1])
@@ -179,9 +179,9 @@ def main():
             ghn.train()
             paths,graphs = get_models(n_models=meta_batch)
             for e in range(INTERLEAVE):
-                pl=0
                 hyper_optimizer.zero_grad()
                 for idx in range(meta_batch):
+                    pl=0
                     model =  torch.load(paths[idx]+'.pt')
                     g = graphs[idx]
                     model.to(device)
