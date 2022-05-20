@@ -167,7 +167,7 @@ def main():
                                             shuffle=True, num_workers=2)
 
     hyper_optimizer = optim.AdamW(ghn.parameters(), lr=META_LEARNING_RATE)
-    scheduler = optim.lr_scheduler.OneCycleLR(hyper_optimizer, max_lr=META_LEARNING_RATE, steps_per_epoch=meta_batch, epochs=sum([print_freq * (j+1) for j in range(int(n_iter/print_freq))]))
+    scheduler = optim.lr_scheduler.OneCycleLR(hyper_optimizer, max_lr=META_LEARNING_RATE, steps_per_epoch=1, epochs=sum([print_freq * (j+1) for j in range(int(n_iter/print_freq))]))
     criterion = nn.CrossEntropyLoss()
 
     with run:
