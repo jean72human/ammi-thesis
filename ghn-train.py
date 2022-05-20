@@ -27,7 +27,7 @@ import os
 
 PATH = sys.argv[5]
 LEARNING_RATE = 1e-3
-META_LEARNING_RATE = 2e-4
+META_LEARNING_RATE = 1e-3
 LIMITS=[1]
 
 n_iter = int(sys.argv[1])
