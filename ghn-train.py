@@ -210,13 +210,14 @@ def main():
                     if e+1==INTERLEAVE:
                         run.log({
                             "loss":pl/LIMITS[-1],
-                            "learning_rate":hyper_optimizer.param_groups[0]["lr"]
+                            "learning_rate":hyper_optimizer.param_groups[0]["lr"],
+                            "iteration": it+1
                         }) 
                 #torch.nn.utils.clip_grad_norm_(ghn.parameters(), 1)
                 hyper_optimizer.step() 
                 scheduler.step()
             
-            if it%10==0: torch.save(ghn.state_dict(), PATH+"-epoch-"+str(it)+".pth")
+            if it%10==0: torch.save(ghn.state_dict(), PATH+".pth")
     torch.save(ghn.state_dict(), PATH+"-final.pth")
     print('Finished Training')
 
