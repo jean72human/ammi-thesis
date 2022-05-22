@@ -20,20 +20,21 @@ import random
 
 import higher
 
+import torch_optimizer as t_optim
+
 import wandb
 
 import sys
 import os
 
-PATH = sys.argv[5]
+PATH = "ghn"
 LEARNING_RATE = 1e-3
-META_LEARNING_RATE = 1e-3
+META_LEARNING_RATE = 1e-4
 LIMITS=[1]
 
 n_iter = int(sys.argv[1])
 meta_batch = int(sys.argv[2])
-print_freq = int(sys.argv[3])
-run_name = sys.argv[4]
+run_name = sys.argv[3]
 
 # Useful constants
 INPUT = 'input'
@@ -118,11 +119,11 @@ def relevant(store,model):
     
     return to_return
 
-def get_models(n_models=8):
+def get_models(n_models=8, num_stacks=3, num_modules_per_stack=3):
     paths = []
     graphs = []
     for d in range(n_models):
-        model = Network(random_spec(), num_labels=10, in_channels=3, stem_out_channels=128, num_stacks=3, num_modules_per_stack=3)
+        model = Network(random_spec(), num_labels=10, in_channels=3, stem_out_channels=128, num_stacks=num_stacks, num_modules_per_stack=num_modules_per_stack)
         m_path = f"d-{d}"
         model.expected_image_sz = (3,32,32)
         g = Graph(model.eval()).to(device)
@@ -134,13 +135,11 @@ def get_models(n_models=8):
     return paths,graphs
 
 def main():
-    INTERLEAVE = 0
 
     run = wandb.init(reinit=True, name=run_name, project="ammi-thesis")
     run.config.update({
         "n_iter":n_iter,
-        "meta_batch":meta_batch,
-        "schedule_step":print_freq
+        "meta_batch":meta_batch
     })
 
     ## Graph Hyper Network
@@ -151,8 +150,8 @@ def main():
         [transforms.ToTensor(),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
-    batch_size = 32 #11254
-    batch_size_test = 32
+    batch_size = 16 #11254
+    batch_size_test = 16
 
     trainset = torchvision.datasets.CIFAR10(root='./data/', train=True,
                                             download=True, transform=data_transform)
@@ -166,58 +165,67 @@ def main():
     testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size_test,
                                             shuffle=True, num_workers=2)
 
-    hyper_optimizer = optim.AdamW(ghn.parameters(), lr=META_LEARNING_RATE)
+    hyper_optimizer = t_optim.Shampoo(ghn.parameters(), lr=META_LEARNING_RATE)
     scheduler = optim.lr_scheduler.OneCycleLR(hyper_optimizer, max_lr=META_LEARNING_RATE, steps_per_epoch=1, epochs=n_iter)
     criterion = nn.CrossEntropyLoss()
 
     with run:
-        for it in range(n_iter):
-            if it%print_freq==0:
-                INTERLEAVE+=1
+        INTERLEAVE = 1
+        num_stacks=3
+        for pointer in range(5):
+            num_modules_per_stack=min(3,pointer+1)
+            if pointer >= 3: 
+                INTERLEAVE = pointer-1
+
+            print("Starting new process INTERLEAVE/num_stacks/num_modules_per_stack")
+            print(INTERLEAVE)
+            print(num_stacks)
+            print(num_modules_per_stack)
+
+            for it in range(n_iter):
+                    
+                ## TRAIN
+                ghn.train()
+                paths,graphs = get_models(n_models=meta_batch, num_stacks=num_stacks, num_modules_per_stack=num_modules_per_stack)
+                for e in range(INTERLEAVE):
+                    hyper_optimizer.zero_grad()
+                    for idx in range(meta_batch):
+                        pl=0
+                        model =  torch.load(paths[idx]+'.pt')
+                        g = graphs[idx]
+                        model.to(device)
+                        model.train()
+                        opt = optim.Adam(model.parameters())
+
+                        weights = weights_to_dict(model,g)
+                        
+                        weights = weights.detach()
+                        new_weights = ghn(g,weights.data)
+
+                        with higher.innerloop_ctx(model, opt) as (fmodel, diffopt):
+                            inputs, labels = next(iter(trainloader))   
+                            inputs, labels = inputs.to(device), labels.to(device)
+                            outputs = fmodel(inputs, params=relevant(new_weights,model))
+
+                            loss = criterion(outputs, labels) #+ 1e-5*new_weights.norm().sum()
+                            loss.backward()
+                            pl+=loss.item()
+                        
+                        
+                        dict_to_weights(model,new_weights)
+                        
+                        torch.save(model, paths[idx]+'.pt')
+
+                        if e+1==INTERLEAVE:
+                            run.log({
+                                "loss":pl/LIMITS[-1],
+                                "learning_rate":hyper_optimizer.param_groups[0]["lr"],
+                                "iteration": it+1
+                            }) 
+                    hyper_optimizer.step() 
+                    scheduler.step()
                 
-            ## TRAIN
-            ghn.train()
-            paths,graphs = get_models(n_models=meta_batch)
-            for e in range(INTERLEAVE):
-                hyper_optimizer.zero_grad()
-                for idx in range(meta_batch):
-                    pl=0
-                    model =  torch.load(paths[idx]+'.pt')
-                    g = graphs[idx]
-                    model.to(device)
-                    model.train()
-                    opt = optim.Adam(model.parameters())
-
-                    weights = weights_to_dict(model,g)
-                    
-                    weights = weights.detach()
-                    new_weights = ghn(g,weights.data)
-
-                    with higher.innerloop_ctx(model, opt) as (fmodel, diffopt):
-                        inputs, labels = next(iter(trainloader))   
-                        inputs, labels = inputs.to(device), labels.to(device)
-                        outputs = fmodel(inputs, params=relevant(new_weights,model))
-
-                        loss = criterion(outputs, labels) #+ 1e-5*new_weights.norm().sum()
-                        loss.backward()
-                        pl+=loss.item()
-                    
-                    
-                    dict_to_weights(model,new_weights)
-                    
-                    torch.save(model, paths[idx]+'.pt')
-
-                    if e+1==INTERLEAVE:
-                        run.log({
-                            "loss":pl/LIMITS[-1],
-                            "learning_rate":hyper_optimizer.param_groups[0]["lr"],
-                            "iteration": it+1
-                        }) 
-                #torch.nn.utils.clip_grad_norm_(ghn.parameters(), 1)
-                hyper_optimizer.step() 
-                scheduler.step()
-            
-            if it%10==0: torch.save(ghn.state_dict(), PATH+".pth")
+                if it%10==0: torch.save(ghn.state_dict(), PATH+".pth")
     torch.save(ghn.state_dict(), PATH+"-final.pth")
     print('Finished Training')
 
