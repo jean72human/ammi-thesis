@@ -165,8 +165,6 @@ def main():
     testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size_test,
                                             shuffle=True, num_workers=2)
 
-    hyper_optimizer = t_optim.Shampoo(ghn.parameters(), lr=META_LEARNING_RATE)
-    scheduler = optim.lr_scheduler.OneCycleLR(hyper_optimizer, max_lr=META_LEARNING_RATE, steps_per_epoch=1, epochs=n_iter)
     criterion = nn.CrossEntropyLoss()
 
     with run:
@@ -181,6 +179,9 @@ def main():
             print(INTERLEAVE)
             print(num_stacks)
             print(num_modules_per_stack)
+
+            hyper_optimizer = t_optim.Ranger(ghn.parameters(), lr=META_LEARNING_RATE)
+            scheduler = optim.lr_scheduler.OneCycleLR(hyper_optimizer, max_lr=META_LEARNING_RATE, steps_per_epoch=1, epochs=INTERLEAVE*n_iter)
 
             for it in range(n_iter):
                     
