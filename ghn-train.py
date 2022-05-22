@@ -29,7 +29,7 @@ import os
 
 PATH = "ghn"
 LEARNING_RATE = 1e-3
-META_LEARNING_RATE = 1e-4
+META_LEARNING_RATE = 1e-3
 LIMITS=[1]
 
 n_iter = int(sys.argv[1])
