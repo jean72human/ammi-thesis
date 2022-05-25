@@ -145,7 +145,7 @@ def main():
 
     ## Graph Hyper Network
     ghn = GHN([512,512,3,3],10, hid=128, ve=True, hypernet='gatedgnn', backmul=False, passes=1, layernorm=True, weightnorm=True, device=device).to(device)
-    ghn.load_state_dict(torch.load("ghn-final.pth",map_location=device))
+    ghn.load_state_dict(torch.load("/ghn-final.pth",map_location=device))
 
     # MNIST Data 
     data_transform = transforms.Compose(
