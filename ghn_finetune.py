@@ -173,7 +173,7 @@ def main():
         INTERLEAVE = interleave_start - 1
         num_stacks=3
         num_modules_per_stack=3
-        for pointer in range(2):
+        for pointer in range(3):
             INTERLEAVE += 1
 
             print("Starting new process INTERLEAVE/num_stacks/num_modules_per_stack")
