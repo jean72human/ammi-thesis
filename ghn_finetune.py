@@ -137,7 +137,7 @@ def get_models(n_models=8, num_stacks=3, num_modules_per_stack=3):
 
 def main():
 
-    run = wandb.init(reinit=False, name=run_name, project="ammi-thesis")
+    run = wandb.init(reinit=True, name=run_name, project="ammi-thesis")
     run.config.update({
         "n_iter":n_iter,
         "meta_batch":meta_batch
@@ -226,8 +226,8 @@ def main():
                 hyper_optimizer.step() 
                 scheduler.step()
             
-            if it%10==0: torch.save(ghn.state_dict(), PATH+"-finetune.pth")
-    torch.save(ghn.state_dict(), PATH+"-finetune-final.pth")
+            if it%10==0: torch.save(ghn.state_dict(), "../"+PATH+"-finetune.pth")
+    torch.save(ghn.state_dict(),  "../"+PATH+"-finetune-final.pth")
     run.finish()
     print('Finished Training')
     
