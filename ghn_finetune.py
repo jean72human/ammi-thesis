@@ -144,6 +144,7 @@ def main():
 
     ## Graph Hyper Network
     ghn = GHN([512,512,3,3],10, hid=128, ve=True, hypernet='gatedgnn', backmul=False, passes=1, layernorm=True, weightnorm=True, device=device).to(device)
+    ghn.load_state_dict(torch.load("../ghn-final.pth",map_location=device))
 
     # MNIST Data 
     data_transform = transforms.Compose(
@@ -188,6 +189,9 @@ def main():
                 ## TRAIN
                 ghn.train()
                 paths,graphs = get_models(n_models=meta_batch, num_stacks=num_stacks, num_modules_per_stack=num_modules_per_stack)
+
+                inputs, labels = next(iter(trainloader))   
+                inputs, labels = inputs.to(device), labels.to(device)
                 for e in range(INTERLEAVE):
                     hyper_optimizer.zero_grad()
                     for idx in range(meta_batch):
@@ -204,8 +208,7 @@ def main():
                         new_weights = ghn(g,weights.data)
 
                         with higher.innerloop_ctx(model, opt) as (fmodel, diffopt):
-                            inputs, labels = next(iter(trainloader))   
-                            inputs, labels = inputs.to(device), labels.to(device)
+    
                             outputs = fmodel(inputs, params=relevant(new_weights,model))
 
                             loss = criterion(outputs, labels) #+ 1e-5*new_weights.norm().sum()
