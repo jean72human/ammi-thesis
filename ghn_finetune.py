@@ -169,67 +169,68 @@ def main():
 
     criterion = nn.CrossEntropyLoss()
 
-    with run:
-        INTERLEAVE = interleave_start - 1
-        num_stacks=3
-        num_modules_per_stack=3
-        for pointer in range(3):
-            INTERLEAVE += 1
+    INTERLEAVE = interleave_start - 1
+    num_stacks=3
+    num_modules_per_stack=3
+    for pointer in range(3):
+        INTERLEAVE += 1
 
-            print("Starting new process INTERLEAVE/num_stacks/num_modules_per_stack")
-            print(INTERLEAVE)
-            print(num_stacks)
-            print(num_modules_per_stack)
+        print("Starting new process INTERLEAVE/num_stacks/num_modules_per_stack")
+        print(INTERLEAVE)
+        print(num_stacks)
+        print(num_modules_per_stack)
 
-            hyper_optimizer = t_optim.Ranger(ghn.parameters(), lr=META_LEARNING_RATE)
-            scheduler = optim.lr_scheduler.OneCycleLR(hyper_optimizer, max_lr=META_LEARNING_RATE, steps_per_epoch=1, epochs=INTERLEAVE*n_iter)
+        hyper_optimizer = t_optim.Ranger(ghn.parameters(), lr=META_LEARNING_RATE)
+        scheduler = optim.lr_scheduler.OneCycleLR(hyper_optimizer, max_lr=META_LEARNING_RATE, steps_per_epoch=1, epochs=INTERLEAVE*n_iter)
 
-            for it in range(n_iter):
-                    
-                ## TRAIN
-                ghn.train()
-                paths,graphs = get_models(n_models=meta_batch, num_stacks=num_stacks, num_modules_per_stack=num_modules_per_stack)
-                inputs, labels = next(iter(trainloader))   
-                inputs, labels = inputs.to(device), labels.to(device)
-                for e in range(INTERLEAVE):
-                    hyper_optimizer.zero_grad()
-                    for idx in range(meta_batch):
-                        pl=0
-                        model =  torch.load(paths[idx]+'.pt')
-                        g = graphs[idx]
-                        model.to(device)
-                        model.train()
-                        opt = optim.Adam(model.parameters())
-
-                        weights = weights_to_dict(model,g)
-                        
-                        weights = weights.detach()
-                        new_weights = ghn(g,weights.data)
-
-                        with higher.innerloop_ctx(model, opt) as (fmodel, diffopt):
-                            outputs = fmodel(inputs, params=relevant(new_weights,model))
-
-                            loss = criterion(outputs, labels) #+ 1e-5*new_weights.norm().sum()
-                            loss.backward()
-                            pl+=loss.item()
-                        
-                        
-                        dict_to_weights(model,new_weights)
-                        
-                        torch.save(model, paths[idx]+'.pt')
-
-                        if e+1==INTERLEAVE:
-                            run.log({
-                                "loss":pl/LIMITS[-1],
-                                "learning_rate":hyper_optimizer.param_groups[0]["lr"],
-                                "iteration": it+1
-                            }) 
-                    hyper_optimizer.step() 
-                    scheduler.step()
+        for it in range(n_iter):
                 
-                if it%10==0: torch.save(ghn.state_dict(), PATH+"-finetune.pth")
+            ## TRAIN
+            ghn.train()
+            paths,graphs = get_models(n_models=meta_batch, num_stacks=num_stacks, num_modules_per_stack=num_modules_per_stack)
+            inputs, labels = next(iter(trainloader))   
+            inputs, labels = inputs.to(device), labels.to(device)
+            for e in range(INTERLEAVE):
+                hyper_optimizer.zero_grad()
+                for idx in range(meta_batch):
+                    pl=0
+                    model =  torch.load(paths[idx]+'.pt')
+                    g = graphs[idx]
+                    model.to(device)
+                    model.train()
+                    opt = optim.Adam(model.parameters())
+
+                    weights = weights_to_dict(model,g)
+                    
+                    weights = weights.detach()
+                    new_weights = ghn(g,weights.data)
+
+                    with higher.innerloop_ctx(model, opt) as (fmodel, diffopt):
+                        outputs = fmodel(inputs, params=relevant(new_weights,model))
+
+                        loss = criterion(outputs, labels) #+ 1e-5*new_weights.norm().sum()
+                        loss.backward()
+                        pl+=loss.item()
+                    
+                    
+                    dict_to_weights(model,new_weights)
+                    
+                    torch.save(model, paths[idx]+'.pt')
+
+                    if e+1==INTERLEAVE:
+                        run.log({
+                            "loss":pl/LIMITS[-1],
+                            "learning_rate":hyper_optimizer.param_groups[0]["lr"],
+                            "iteration": it+1
+                        }) 
+                hyper_optimizer.step() 
+                scheduler.step()
+            
+            if it%10==0: torch.save(ghn.state_dict(), PATH+"-finetune.pth")
     torch.save(ghn.state_dict(), PATH+"-finetune-final.pth")
+    run.finish()
     print('Finished Training')
+    
 
 if __name__=="__main__":
     main()
