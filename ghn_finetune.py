@@ -145,7 +145,7 @@ def main():
 
     ## Graph Hyper Network
     ghn = GHN([512,512,3,3],10, hid=128, ve=True, hypernet='gatedgnn', backmul=False, passes=1, layernorm=True, weightnorm=True, device=device).to(device)
-    ghn.load_state_dict(torch.load("../ghn-final.pth",map_location=device))
+    #ghn.load_state_dict(torch.load("../ghn-final.pth",map_location=device))
 
     # MNIST Data 
     data_transform = transforms.Compose(
@@ -226,8 +226,8 @@ def main():
                 hyper_optimizer.step() 
                 scheduler.step()
             
-            if it%10==0: torch.save(ghn.state_dict(), "../"+PATH+"-finetune.pth")
-    torch.save(ghn.state_dict(),  "../"+PATH+"-finetune-final.pth")
+            if it%10==0: torch.save(ghn.state_dict(), PATH+"-finetune.pth")
+    torch.save(ghn.state_dict(),  PATH+"-finetune-final.pth")
     run.finish()
     print('Finished Training')
     
