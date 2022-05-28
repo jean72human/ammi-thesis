@@ -29,7 +29,7 @@ import os
 
 PATH = "ghn"
 LEARNING_RATE = 1e-3
-META_LEARNING_RATE = 1e-3
+META_LEARNING_RATE = 1e-4
 LIMITS=[1]
 
 n_iter = int(sys.argv[1])
@@ -190,8 +190,6 @@ def main():
                 ghn.train()
                 paths,graphs = get_models(n_models=meta_batch, num_stacks=num_stacks, num_modules_per_stack=num_modules_per_stack)
 
-                inputs, labels = next(iter(trainloader))   
-                inputs, labels = inputs.to(device), labels.to(device)
                 for e in range(INTERLEAVE):
                     hyper_optimizer.zero_grad()
                     for idx in range(meta_batch):
@@ -208,7 +206,8 @@ def main():
                         new_weights = ghn(g,weights.data)
 
                         with higher.innerloop_ctx(model, opt) as (fmodel, diffopt):
-    
+                            inputs, labels = next(iter(trainloader))   
+                            inputs, labels = inputs.to(device), labels.to(device)   
                             outputs = fmodel(inputs, params=relevant(new_weights,model))
 
                             loss = criterion(outputs, labels) #+ 1e-5*new_weights.norm().sum()
@@ -229,8 +228,8 @@ def main():
                     hyper_optimizer.step() 
                     scheduler.step()
                 
-                if it%10==0: torch.save(ghn.state_dict(), PATH+"-finetune.pth")
-    torch.save(ghn.state_dict(), PATH+"-finetune-final.pth")
+                if it%10==0: torch.save(ghn.state_dict(), PATH+"-finetuned.pth")
+    torch.save(ghn.state_dict(), PATH+"-finetuned-final.pth")
     print('Finished Training')
 
 if __name__=="__main__":
